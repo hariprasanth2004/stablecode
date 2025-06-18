@@ -1,28 +1,32 @@
+import java.io.*;
 import java.util.*;
 
-class Book {
+class Book implements Serializable {
     int id;
     String title;
     String author;
     boolean isIssued;
 
-    Book(int id, String title, String author) {
+    public Book(int id, String title, String author) {
         this.id = id;
         this.title = title;
         this.author = author;
         this.isIssued = false;
     }
 
-    void display() {
+    public void display() {
         System.out.println(id + " | " + title + " | " + author + " | " + (isIssued ? "Issued" : "Available"));
     }
 }
 
 public class LibraryManagement {
-    static Scanner sc = new Scanner(System.in);
+    static final String FILE_NAME = "books.dat";
     static ArrayList<Book> books = new ArrayList<>();
+    static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
+        loadBooksFromFile();
+
         int choice;
         do {
             System.out.println("\n===== LIBRARY MANAGEMENT SYSTEM =====");
@@ -31,7 +35,7 @@ public class LibraryManagement {
             System.out.println("3. Issue Book");
             System.out.println("4. Return Book");
             System.out.println("5. Exit");
-            System.out.print("Enter choice: ");
+            System.out.print("Enter your choice: ");
             choice = sc.nextInt();
 
             switch (choice) {
@@ -39,8 +43,8 @@ public class LibraryManagement {
                 case 2 -> displayBooks();
                 case 3 -> issueBook();
                 case 4 -> returnBook();
-                case 5 -> System.out.println("Exiting...");
-                default -> System.out.println("Invalid choice!");
+                case 5 -> saveBooksToFile();
+                default -> System.out.println("Invalid choice. Try again.");
             }
         } while (choice != 5);
     }
@@ -48,17 +52,22 @@ public class LibraryManagement {
     static void addBook() {
         System.out.print("Enter book ID: ");
         int id = sc.nextInt();
-        sc.nextLine(); // clear newline
+        sc.nextLine(); // clear buffer
         System.out.print("Enter book title: ");
         String title = sc.nextLine();
         System.out.print("Enter author name: ");
         String author = sc.nextLine();
+
         books.add(new Book(id, title, author));
         System.out.println("Book added successfully!");
     }
 
     static void displayBooks() {
-        System.out.println("\nID | Title | Author | Status");
+        if (books.isEmpty()) {
+            System.out.println("No books available.");
+            return;
+        }
+        System.out.println("ID | Title | Author | Status");
         for (Book book : books) {
             book.display();
         }
@@ -92,11 +101,30 @@ public class LibraryManagement {
                     System.out.println("Book returned successfully.");
                     return;
                 } else {
-                    System.out.println("This book was not issued.");
+                    System.out.println("Book was not issued.");
                     return;
                 }
             }
         }
         System.out.println("Book not found.");
+    }
+
+    static void saveBooksToFile() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+            out.writeObject(books);
+            System.out.println("Books saved to file.");
+        } catch (IOException e) {
+            System.out.println("Error saving books: " + e.getMessage());
+        }
+    }
+
+    static void loadBooksFromFile() {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
+            books = (ArrayList<Book>) in.readObject();
+        } catch (FileNotFoundException e) {
+            System.out.println("No saved data found. Starting fresh.");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error loading books: " + e.getMessage());
+        }
     }
 }
